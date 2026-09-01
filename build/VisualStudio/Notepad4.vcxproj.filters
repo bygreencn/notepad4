@@ -108,6 +108,9 @@
     <ClCompile Include="..\..\scintilla\lexers\LexGeoGebra.cxx">
       <Filter>Scintilla\lexers</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\scintilla\lexers\LexGeoGebra.cxx">
+      <Filter>Scintilla\lexers</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\scintilla\lexers\LexGN.cxx">
       <Filter>Scintilla\lexers</Filter>
     </ClCompile>

@@ -45,6 +45,7 @@ extra_word_char: extra identifier characters excludes dot.
 ignore_word_style: word styles to be ignored for auto-completion word scanning.
 autoc_extra_keyword: [deprecated] extra keyword for auto-completion.
 auto_ident_word_style: word styles that supports auto ident.
+keyword_attr: default keyword attribute.
 plain_text_file: treat as plain text file for auto-completion.
 plain_text_style: plain text styles for auto-completion.
 string_style_range: first and last string or regex style for auto-completion.
@@ -115,6 +116,7 @@ LexerConfigMap = {
 		'escape_char_start': NoEscapeCharacter,
 		'extra_word_char': '-',
 		'plain_text_file': True,
+		'keyword_attr': KeywordAttr.NoLexer,
 	},
 	'NP2LEX_2NDTEXTFILE': {
 		'indent_based_folding': True,
@@ -122,6 +124,7 @@ LexerConfigMap = {
 		'escape_char_start': NoEscapeCharacter,
 		'extra_word_char': '-',
 		'plain_text_file': True,
+		'keyword_attr': KeywordAttr.NoLexer,
 	},
 	'NP2LEX_ANSI': {
 		'default_encoding': 'DOS-437',
@@ -131,6 +134,7 @@ LexerConfigMap = {
 		'escape_char_start': NoEscapeCharacter,
 		'extra_word_char': '-',
 		'plain_text_file': True,
+		'keyword_attr': KeywordAttr.NoLexer,
 	},
 
 	'NP2LEX_ABAQUS': {
@@ -307,11 +311,13 @@ LexerConfigMap = {
 		'line_comment_string': '#',
 		'comment_style_marker': 'SCE_CONF_COMMENT',
 		'operator_style': ['SCE_CONF_OPERATOR'],
+		'keyword_attr': KeywordAttr.NoLexer,
 	},
 	'NP2LEX_CSV': {
 		'escape_char_start': NoEscapeCharacter,
 		'extra_word_char': '-',
 		'plain_text_file': True,
+		'keyword_attr': KeywordAttr.NoLexer,
 	},
 	'NP2LEX_CPP': {
 		'cpp_style_comment': True,
@@ -403,6 +409,33 @@ LexerConfigMap = {
 		'default_fold_level': ['command', '[file]', 'diff'],
 		'escape_char_start': NoEscapeCharacter,
 		'plain_text_file': True,
+		'keyword_attr': KeywordAttr.NoLexer,
+	},
+
+	'NP2LEX_ELIXIR': {
+		'line_comment_string': '#',
+		'comment_style_marker': 'SCE_ERLANG_COMMENTLINE',
+		'indent_based_folding': True,
+		'indent_guide_style': 'forward',
+		'default_fold_level': ['function'],
+		'escape_char_style': 'SCE_ERLANG_ESCAPECHAR',
+		'raw_string_style': ['SCE_ERLANG_VERBATIM_SIGIL', 'SCE_ERLANG_TRIPLE_SIGIL_SQ', 'SCE_ERLANG_TRIPLE_SIGIL_DQ'],
+		'none_quote_style': 'SCE_ERLANG_CHARACTER',
+		'operator_style': ['SCE_ERLANG_OPERATOR', 'SCE_ERLANG_OPERATOR2'],
+		'string_style_range': ['SCE_ERLANG_CHARACTER', 'SCE_ERLANG_ESCAPECHAR'],
+	},
+	'NP2LEX_ERLANG': {
+		'line_comment_string': '%',
+		'comment_style_marker': 'SCE_ERLANG_COMMENTLINE',
+		'shebang_exe_name': 'escript',
+		'indent_based_folding': True,
+		'indent_guide_style': 'forward',
+		'default_fold_level': ['function'],
+		'escape_char_style': 'SCE_ERLANG_ESCAPECHAR',
+		'raw_string_style': ['SCE_ERLANG_TRIPLE_STRING_SQ', 'SCE_ERLANG_TRIPLE_STRING_DQ', 'SCE_ERLANG_VERBATIM_SIGIL', 'SCE_ERLANG_TRIPLE_SIGIL_SQ', 'SCE_ERLANG_TRIPLE_SIGIL_DQ'],
+		'none_quote_style': 'SCE_ERLANG_CHARACTER',
+		'operator_style': ['SCE_ERLANG_OPERATOR', 'SCE_ERLANG_OPERATOR2'],
+		'string_style_range': ['SCE_ERLANG_CHARACTER', 'SCE_ERLANG_ESCAPECHAR'],
 	},
 
 	'NP2LEX_FORTRAN': {
@@ -434,7 +467,6 @@ LexerConfigMap = {
 		'cpp_preprocessor': True,
 		'string_style_range': ['SCE_FSHARP_CHARACTER', 'SCE_FSHARP_FORMAT_SPECIFIER'],
 	},
-
 	'NP2LEX_GEOGEBRA': {
 		'default_encoding': 'utf-8',
 		'line_comment_string': '#',
@@ -555,6 +587,7 @@ LexerConfigMap = {
 		'comment_style_marker': 'SCE_PROPS_COMMENT',
 		'default_fold_level': ['section', 'comment'],
 		'escape_char_start': NoEscapeCharacter,
+		'keyword_attr': KeywordAttr.NoLexer,
 	},
 	'NP2LEX_INNOSETUP': {
 		'line_comment_string': [';', '//'],
@@ -659,11 +692,12 @@ LexerConfigMap = {
 		'block_comment_string': ('\\begin{comment}', '\\end{comment}'),
 		'block_comment_on_new_line': True,
 		'comment_style_marker': 'SCE_L_COMMENT2',
-		'escape_char_start': '^',
+		'default_fold_level': ['chapter', 'section', 'subsection'],
 		'escape_char_style': 'SCE_L_SPECIAL',
 		'escape_punctuation': True,
+		'none_quote_style': 'SCE_L_CATCODE',
 		'operator_style': ['SCE_L_OPERATOR'],
-		'plain_text_style': ['SCE_L_DEFAULT', 'SCE_L_VERBATIM2', 'SCE_L_VERBATIM',
+		'plain_text_style': ['SCE_L_DEFAULT', 'SCE_L_VERBATIM2', 'SCE_L_VERBATIM', 'SCE_L_TITLE_TOC',
 			'SCE_L_TITLE', 'SCE_L_CHAPTER', 'SCE_L_SECTION', 'SCE_L_SECTION1', 'SCE_L_SECTION2'],
 	},
 	'NP2LEX_LISP': {
@@ -831,6 +865,19 @@ LexerConfigMap = {
 			'js_style(SCE_JS_TEMPLATELITERAL)', 'js_style(SCE_JS_REGEX)', 'js_style(SCE_JS_ESCAPECHAR)',
 			'css_style(SCE_CSS_ESCAPECHAR)', 'css_style(SCE_CSS_STRING_SQ)', 'css_style(SCE_CSS_STRING_DQ)', 'css_style(SCE_CSS_URL)'],
 		'plain_text_style': ['SCE_H_DEFAULT'],
+	},
+	'NP2LEX_POWERBUILDER': {
+		'cpp_style_comment': True,
+		'comment_style_marker': 'SCE_POWERBUILDER_COMMENTBLOCK',
+		'indent_based_folding': True,
+		'indent_guide_style': 'forward',
+		'default_fold_level': ['function'],
+		'escape_char_start': '~',
+		'escape_char_style': 'SCE_POWERBUILDER_ESCAPECHAR',
+		'operator_style': ['SCE_POWERBUILDER_OPERATOR'],
+		'cpp_preprocessor': True,
+		'extra_word_char': '-$#%',
+		'string_style_range': ['SCE_POWERBUILDER_STRING_SQ', 'SCE_POWERBUILDER_ESCAPECHAR'],
 	},
 	'NP2LEX_POWERSHELL': {
 		'line_comment_string': '#',
@@ -1002,6 +1049,7 @@ LexerConfigMap = {
 		'default_fold_level': ['class', 'function'],
 		'default_fold_ignore_inner': 'SCE_SWIFT_FUNCTION_DEFINITION',
 		'escape_char_style': 'SCE_SWIFT_ESCAPECHAR',
+		'raw_string_style': ['SCE_SWIFT_STRING_ED', 'SCE_SWIFT_TRIPLE_STRING_ED'],
 		'angle_bracket_generic': True,
 		'generic_type_style': ['SCE_SWIFT_CLASS', 'SCE_SWIFT_STRUCT', 'SCE_SWIFT_PROTOCOL', 'SCE_SWIFT_ENUM'],
 		'operator_style': ['SCE_SWIFT_OPERATOR', 'SCE_SWIFT_OPERATOR2'],
@@ -1054,6 +1102,19 @@ LexerConfigMap = {
 		'extra_word_char': '$#@',
 		#'ignore_word_style': ['SCE_JS_WORD', 'SCE_JS_WORD2', 'SCE_JS_DIRECTIVE'],
 		'string_style_range': ['SCE_JSX_TEXT', 'SCE_JS_ESCAPECHAR'],
+	},
+	'NP2LEX_TYPST': {
+		'cpp_style_comment': True,
+		'comment_style_marker': 'SCE_TYPST_COMMENT_BLOCK',
+		'default_fold_level': ['header1', 'header2', 'header3'],
+		'escape_char_style': 'SCE_TYPST_ESCAPECHAR',
+		'escape_punctuation': True,
+		'none_quote_style': 'SCE_TYPST_OPERATOR',
+		'operator_style': ['SCE_TYPST_OPERATOR'],
+		'extra_word_char': '-',
+		'string_style_range': ['SCE_TYPST_STRING', 'SCE_TYPST_ESCAPECHAR'],
+		'plain_text_style': ['SCE_TYPST_DEFAULT', 'SCE_TYPST_HEADER1', 'SCE_TYPST_HEADER2', 'SCE_TYPST_HEADER3',
+			'SCE_TYPST_HEADER4', 'SCE_TYPST_HEADER5', 'SCE_TYPST_HEADER6'],
 	},
 
 	'NP2LEX_VBSCRIPT': {
@@ -1336,7 +1397,7 @@ def BuildLexerConfigContent(rid, keywordAttr):
 	styles = config.get('character_style', ['0'])
 	output.append(f"{indent}{styles[0]}, {config.get('none_quote_style', '0')},")
 	# operator styles
-	styles = config.get('operator_style', []) + ['0', '0']
+	styles = [*config.get('operator_style', []), '0', '0']
 	output.append(f"{indent}{styles[0]}, {styles[1]},")
 
 	# keyword attribute
@@ -1349,7 +1410,7 @@ def BuildLexerConfigContent(rid, keywordAttr):
 			output.append(f'{indent}{prefix} KeywordAttr{bit}({index}, {expr}) // {comment}')
 			prefix = '|'
 	else:
-		expr = get_enum_flag_expr(KeywordAttr.Default)
+		expr = get_enum_flag_expr(config.get('keyword_attr', KeywordAttr.Default))
 		output.append(indent + expr)
 
 	# style marker

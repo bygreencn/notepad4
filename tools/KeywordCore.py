@@ -14,7 +14,7 @@ SinglyWordMap = {
 	'properties': 'property',
 	'alias': 'alias',
 }
-
+LexerKeywordCount = 15
 AllKeywordAttrList = {}
 # for keyword list used in AutoC_AddSpecWord()
 SpecialKeywordIndexList = {}
@@ -68,7 +68,7 @@ def build_enum_name(comment):
 	items = [item if item[0].isupper() else item.title() for item in items]
 	return ''.join(items)
 
-def BuildKeywordContent(rid, lexer, keywordList, keywordCount=16):
+def BuildKeywordContent(rid, lexer, keywordList, reservedCount=0):
 	output = []
 	attrList = []
 	indexList = LexerKeywordIndexList.setdefault(lexer, {})
@@ -81,7 +81,9 @@ def BuildKeywordContent(rid, lexer, keywordList, keywordCount=16):
 			items = set(items)
 			for item in items: # check ASCII graphic character
 				if any(c <= ' ' or c > '~' for c in item):
-					print(rid, item)
+					print(f'{rid} {comment}: {item}')
+				# if len(item) <= 1:
+				# 	print(f'{rid} {comment}: {item}')
 			makeLower = False
 			if attr & KeywordAttr.MakeLower:
 				lowercase = to_lower(items)
@@ -91,9 +93,9 @@ def BuildKeywordContent(rid, lexer, keywordList, keywordCount=16):
 				else:
 					if len(items) != len(unique):
 						duplicate = find_duplicate_lower(items)
-						print(rid, comment, 'duplicate words:', duplicate)
+						print(f'{rid} {comment} duplicate words: {duplicate}')
 					makeLower = True
-					items = [item[1] for item in sorted(zip(lowercase, items))]
+					items = [item[1] for item in sorted(zip(lowercase, items, strict=True))]
 			if not makeLower:
 				items = sorted(items)
 			lines = MakeKeywordLines(items, makeLower=makeLower)
@@ -102,17 +104,18 @@ def BuildKeywordContent(rid, lexer, keywordList, keywordCount=16):
 		if lines:
 			length = len(lines) + sum(len(line) for line in lines)
 			if length >= 0xffff:
-				print(rid, comment, 'string exceeds 64 KiB:', length)
+				print(f'{rid} {comment} string exceeds 64 KiB: {length}')
 			if attr & KeywordAttr.PrefixSpace:
 				attr &= ~KeywordAttr.PrefixSpace
 				lines[0] = ' ' + lines[0]
 			output.extend('"' + line + ' "' for line in lines)
 		else:
 			output.append('nullptr')
-		if index + 1 < keywordCount:
-			output.append("")
+		output.append("")
 
 		indexName = build_enum_name(comment)
+		if index > LexerKeywordCount:
+			attr |= KeywordAttr.NoLexer
 		# keyword index for lexer
 		if (attr & KeywordAttr.NoLexer) == 0 and comment != 'unused':
 			if items:
@@ -142,19 +145,21 @@ def BuildKeywordContent(rid, lexer, keywordList, keywordCount=16):
 		maxKeywordLen += 2 # extra + '\0'
 		if '@' not in indexList or indexList['@'][0] < maxKeywordLen:
 			indexList['@'] = (maxKeywordLen, 0)
-	count = keywordCount - len(keywordList)
-	if count:
-		output.append(", nullptr" * count)
+	index = len(keywordList)
+	while reservedCount != 0:
+		attrList.append((index, KeywordAttr.NoLexer, 'Code Snippet'))
+		index += 1
+		reservedCount -= 1
 	if attrList:
 		AllKeywordAttrList[rid] = attrList
 	return output, attrList
 
-def UpdateKeywordFile(rid, path, lexer, keywordList, keywordCount=16, suffix=''):
+def UpdateKeywordFile(rid, path, lexer, keywordList, reservedCount=0, suffix=''):
 	if keywordList is None:
 		return
 	attrList = []
 	if keywordList:
-		output, attrList = BuildKeywordContent(rid, lexer, keywordList, keywordCount=keywordCount)
+		output, attrList = BuildKeywordContent(rid, lexer, keywordList, reservedCount=reservedCount)
 		if len(output) > 1:
 			Regenerate(path, '//' + suffix, output)
 
@@ -256,7 +261,6 @@ def remove_duplicate_lower(keywords, duplicate):
 def first_word_on_each_line(doc):
 	return re.findall(r'^\s*(\w+)', doc, re.MULTILINE)
 
-	
 def parse_actionscript_api_file(path):
 	sections = read_api_file(path, '//')
 	keywordMap = {}
@@ -840,7 +844,7 @@ def parse_css_api_file(pathList):
 	# custom property https://www.w3.org/TR/css-variables-1/
 	vendor = '^-moz- ^-ms- ^-o- ^-webkit-'.split()
 	keywordMap = {
-		'properties': vendor + ['^--'],
+		'properties': [*vendor, '^--'],
 		'at rules': vendor[:],
 		'pseudo classes': vendor[:],
 		'pseudo elements': vendor,
@@ -974,6 +978,38 @@ def parse_dart_api_file(path):
 		('function', keywordMap['function'], KeywordAttr.NoLexer),
 	]
 
+def parse_elixir_api_file(path):
+	sections = read_api_file(path, '#')
+	keywordMap = {}
+	for key, doc in sections:
+		items = []
+		if key == 'keywords':
+			items = doc.split()
+		elif key == 'directives':
+			items = re.findall(r'@(\w+)', doc)
+		keywordMap[key] = items
+
+	return [
+		('keywords', keywordMap['keywords'], KeywordAttr.Default),
+		('annotations', keywordMap['annotations'], KeywordAttr.NoLexer | KeywordAttr.NoAutoComp | KeywordAttr.Special),
+	]
+
+def parse_erlang_api_file(path):
+	sections = read_api_file(path, '%')
+	keywordMap = {}
+	for key, doc in sections:
+		items = []
+		if key == 'keywords':
+			items = doc.split()
+		elif key == 'directives':
+			items = re.findall(r'-(\w+)', doc)
+		keywordMap[key] = items
+
+	return [
+		('keywords', keywordMap['keywords'], KeywordAttr.Default),
+		('directives', keywordMap['directives'], KeywordAttr.NoLexer | KeywordAttr.NoAutoComp | KeywordAttr.Special),
+	]
+
 def parse_fortran_api_file(path):
 	sections = read_api_file(path, '!', commentKind=1)
 	keywordMap = {}
@@ -1039,28 +1075,28 @@ def parse_GeoGebra_api_file(path):
 	sections = read_api_file(path, '//')
 	keywordMap = {}
 	for key, doc in sections:
-		if key == 'operators':
+		if key == 'keywords':
 			keywordMap[key] = doc.split()
 		elif key == 'constants':
 			keywordMap[key] = doc.split()
-		elif key == 'innerfunction':
+		elif key == 'innerfunctions':
 			items = re.findall(r'^(\w+\(\)).*$', doc, re.MULTILINE)
 			keywordMap[key] = items
-		elif key == 'function':
+		elif key == 'functions':
 			items = re.findall(r'^(\w+\(\)).*$', doc, re.MULTILINE)
 			keywordMap[key] = items
 
 	RemoveDuplicateKeyword(keywordMap, [
-		'operators',
+		'keywords',
 		'constants',
-		'innerfunction',
-		'function',
+		'innerfunctions',
+		'functions',
 	])
 	return [
-		('operators', keywordMap['operators'], KeywordAttr.Special),
+		('keywords', keywordMap['keywords'], KeywordAttr.Special),
 		('constants', keywordMap['constants'], KeywordAttr.Special),
-		('innerfunction', keywordMap['innerfunction'], KeywordAttr.Special),
-		('function', keywordMap['function'], KeywordAttr.Special),
+		('innerfunctions', keywordMap['innerfunctions'], KeywordAttr.Special),
+		('functions', keywordMap['functions'], KeywordAttr.Special),
 	]
 
 def parse_gn_api_file(path):
@@ -1578,11 +1614,10 @@ def parse_javascript_api_file(path):
 						functions.add(item + '(')
 					else:
 						constant.add(item)
+				elif kind == '(':
+					functions.add(item + '(')
 				else:
-					if kind == '(':
-						functions.add(item + '(')
-					else:
-						properties.add(item)
+					properties.add(item)
 
 			items = ['function', 'require', 'import']
 			for item in items:
@@ -1734,6 +1769,15 @@ def parse_kotlin_api_file(path):
 		('KDoc', keywordMap['kdoc'], KeywordAttr.NoLexer | KeywordAttr.NoAutoComp | KeywordAttr.Special),
 	]
 
+def parse_latex_api_file(path):
+	doc = read_file(path)
+	commands = re.findall(r'\\(\w+)', doc)
+	misc = []
+	return [
+		('commands', commands, KeywordAttr.NoLexer | KeywordAttr.Special),
+		('misc', misc, KeywordAttr.NoLexer)
+	]
+
 def parse_lua_api_file(path):
 	sections = read_api_file(path, '--')
 	keywordMap = {}
@@ -1858,9 +1902,7 @@ def parse_nsis_api_file(path):
 		elif key == 'functions':
 			functions = []
 			for item in items:
-				item = item.strip('.')
-				if item.startswith('un.'):
-					item = item[3:]
+				item = item.strip('.').removeprefix('un.')
 				functions.append(item)
 			items = functions
 		elif key == 'predefined variables':
@@ -1955,6 +1997,33 @@ def parse_php_api_file(path):
 		('void tag', HtmlVoidTagList, KeywordAttr.NoAutoComp | KeywordAttr.PrefixSpace),
 		('JavaScript', JavaScriptKeywordMap['keywords'], KeywordAttr.NoAutoComp),
 		('phpdoc', keywordMap['phpdoc'], KeywordAttr.NoLexer | KeywordAttr.NoAutoComp | KeywordAttr.Special),
+	]
+
+def parse_powerbuilder_api_file(path):
+	keywordMap = {}
+	sections = read_api_file(path, '//')
+	for key, doc in sections:
+		if key in ('keywords', 'types', 'directives'):
+			items = doc.split()
+			if key == 'directives':
+				directives = []
+				keywords = keywordMap['keywords']
+				for item in items:
+					if item[0] == '#':
+						directives.append(item[1:])
+					else:
+						keywords.append(item)
+				items = directives
+			keywordMap[key] = items
+
+	RemoveDuplicateKeyword(keywordMap, [
+		'types',
+		'keywords',
+	])
+	return [
+		('keywords', keywordMap['keywords'], KeywordAttr.MakeLower),
+		('type keyword', keywordMap['types'], KeywordAttr.MakeLower),
+		('preprocessor', keywordMap['directives'], KeywordAttr.NoLexer | KeywordAttr.NoAutoComp | KeywordAttr.Special),
 	]
 
 def parse_powershell_api_file(path):
@@ -2496,6 +2565,19 @@ def parse_toml_api_file(path):
 		('keywords', keywords, KeywordAttr.Default),
 	]
 
+def parse_typst_api_file(path):
+	sections = read_api_file(path, '//')
+	keywordMap = {}
+	for key, doc in sections:
+		items = []
+		if key == 'keywords':
+			items = re.findall(r'\w+', doc)
+		keywordMap[key] = items
+
+	return [
+		('keywords', keywordMap['keywords'], KeywordAttr.Default),
+	]
+
 def parse_typescript_api_file(path):
 	sections = read_api_file(path, '//')
 	keywordMap = {}
@@ -2562,12 +2644,12 @@ def parse_vhdl_api_file(path):
 			for item in items:
 				constant.extend(item.replace(',', ' ').split())
 			items = re.findall(r'constant\s+(\w+)', doc)
-			constant.extend(items + ['INPUT', 'OUTPUT'])
+			constant.extend([*items, 'INPUT', 'OUTPUT'])
 			misc.extend(constant)
 			keywordMap['constants'] = to_lower(constant)
 			packages = re.findall(r'package\s+(\w+)', doc)
 			misc.extend(packages)
-			keywordMap['packages'] = to_lower(packages) + ['ieee', 'std', 'work']
+			keywordMap['packages'] = [*to_lower(packages), 'ieee', 'std', 'work']
 			misc.extend(re.findall(r'context\s+(\w+)', doc))
 
 	keywordMap['misc'] = misc
@@ -2843,16 +2925,23 @@ def parse_zig_api_file(path):
 		('function', keywordMap['functions'], KeywordAttr.NoLexer),
 	]
 
-def UpdateLexerKeywordAttr(indexPath, lexerPath):
+def UpdateLexerKeywordAttr(indexPath, matchPath, lexerPath):
 	#print(SinglyWordMap)
 	output = []
+	matchIndex = []
 	if AllKeywordAttrList:
 		output.append('enum {')
+		matchIndex.append('enum {')
 		for prefix, group in sorted(SpecialKeywordIndexList.items()):
 			items = sorted(group.items(), key=lambda m: m[1])
-			output.extend(f'\t{prefix}{key} = {value},' for key, value in items)
+			lines = [f'\t{prefix}{key} = {value},' for key, value in items]
+			output.extend(lines)
+			if prefix in ('CPPKeywordIndex_'):
+				matchIndex.extend(lines)
+		matchIndex.append('};')
 		output.append('};')
 	Regenerate(indexPath, '//KeywordIndex', output)
+	Regenerate(matchPath, '//KeywordIndex', matchIndex)
 
 	for lexer, indexList in LexerKeywordIndexList.items():
 		output = []
